@@ -9,7 +9,7 @@ C     !ROUTINE: CALC_3D_DIFFUSIVITY
 C     !INTERFACE:
       SUBROUTINE CALC_3D_DIFFUSIVITY(
      I        bi, bj, iMin,iMax,jMin,jMax,
-     I        trIdentity, trUseGMRedi, trUseKPP,
+     I        trIdentity, trUseGMRedi, trUseKPP, trUseSPPAdd,
      O        KappaRTr,
      I        myThid )
 
@@ -49,12 +49,13 @@ C     iMin,iMax  :: Range of points for which calculation is performed.
 C     jMin,jMax  :: Range of points for which calculation is performed.
 C     trIdentity :: tracer identifier
 C     trUseGMRedi:: this tracer use GM-Redi
+C     trUseSPPAdd:: this tracer use SPP-Add
 C     trUseKPP   :: this tracer use KPP
 C     myThid     :: Instance number for this innvocation of CALC_3D_DIFFUSIVITY
 C     KappaRTr   :: Net diffusivity for this tracer (trIdentity)
       INTEGER bi,bj,iMin,iMax,jMin,jMax
       INTEGER trIdentity
-      LOGICAL trUseGMRedi, trUseKPP
+      LOGICAL trUseGMRedi, trUseKPP, trUseSPPAdd
       _RL KappaRTr(1-OLx:sNx+OLx,1-OLy:sNy+OLy,Nr)
       INTEGER myThid
 
@@ -208,6 +209,15 @@ C--   Set vertical diffusivity contribution from KPP
       ENDIF
 #endif
 
+#ifdef ALLOW_SPP_ADD
+      IF (trUseSPPAdd) THEN
+         CALL SPP_ADD_DIFF(
+     I        bi,bj,iMin,iMax,jMin,jMax,0,Nr,
+     U        KappaRTr,
+     I        trIdentity,myThid)
+      ENDIF
+#endif
+
 #ifdef ALLOW_PP81
       IF (usePP81) THEN
          CALL PP81_CALC_DIFF(
@@ -244,6 +254,15 @@ C--   Set vertical diffusivity contribution from KPP
       ENDIF
 #endif
 
+#ifdef ALLOW_SMAG_3D_DIFFUSIVITY
+       IF ( smag3D_diffCoeff.GT.zeroRL ) THEN
+        DO k = 2,Nr
+         DO j = 1-OLy,sNy+OLy
+          DO i = 1-OLx,sNx+OLx
+           KappaRTr(i,j,k) = KappaRTr(i,j,k)
+     &          + halfRL*( smag3D_diffK(i,j,k-1,bi,bj)
+     &                   + smag3D_diffK(i,j, k, bi,bj) )
+          ENDDO
 #ifdef ALLOW_SMAG_3D_DIFFUSIVITY
        IF ( smag3D_diffCoeff.GT.zeroRL ) THEN
         DO k = 2,Nr
@@ -354,15 +373,6 @@ CADJ STORE kappartr(:,:,k) = loctape_3d_diff, key = k
 
          pC_kFac = 1.
          IF ( pCellMix_delR.LT.drF(km) )
-     &     pC_kFac = pCellMix_delR*recip_drF(km)
-
-C-    Increase KappaRTr below surface level:
-         IF ( mixSurf.GE.1 ) THEN
-          DO j = 2-OLy, sNy+OLy
-           DO i = 2-OLx, sNx+OLx
-             tmpFac(i,j) = 0. _d 0
-             IF ( km.EQ.kSurfC(i,j,bi,bj) .AND.
-     &            km.LT.kLowC(i,j,bi,bj) ) THEN
                tmpFac(i,j) = pC_kFac*_recip_hFacC(i,j,km,bi,bj)
              ENDIF
            ENDDO

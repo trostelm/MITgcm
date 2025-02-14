@@ -54,6 +54,7 @@ C     data.pkg namelists
      &          useGGL90,
      &          useKPP,
      &          useGMRedi,
+     &          useSPPAdd,
      &          useDOWN_SLOPE,
      &          useBBL,
      &          useCAL,
@@ -119,6 +120,7 @@ c     useGAD          =.FALSE.
       useGGL90        =.FALSE.
       useKPP          =.FALSE.
       useGMRedi       =.FALSE.
+      useSPPAdd       =.FALSE.
       useDOWN_SLOPE   =.FALSE.
       useBBL          =.FALSE.
       useCAL          =.FALSE.
@@ -282,6 +284,9 @@ C----- pkgs with a standard "usePKG" On/Off switch in "data.pkg":
 #endif
 #ifdef ALLOW_GMREDI
       CALL PACKAGES_PRINT_MSG( useGMRedi,     'GMRedi',      ' ' )
+#endif
+#ifdef ALLOW_SPP_ADD
+      CALL PACKAGES_PRINT_MSG( useSPPAdd,     'SPPAdd',      ' ' )
 #endif
 #ifdef ALLOW_DOWN_SLOPE
       CALL PACKAGES_PRINT_MSG( useDOWN_SLOPE, 'DOWN_SLOPE',  ' ' )
